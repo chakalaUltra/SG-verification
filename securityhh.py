@@ -220,11 +220,8 @@ verification_queue = asyncio.Queue()
 
 @tasks.loop(seconds=1)
 async def verify_task():
-    if not verification_queue.empty():
-        print(f"Processing {verification_queue.qsize()} items in verification queue")
     while not verification_queue.empty():
         data = await verification_queue.get()
-        print("Retrieved data from verification queue, processing...")
         await process_verification(data)
 
 async def process_verification(data):
@@ -236,9 +233,6 @@ async def process_verification(data):
     guild_ids = data["guild_ids"]
     username = data["username"]
     target_guild_id = data.get("target_guild_id")
-
-    print(f"Processing verification for user {username} ({user_id})")
-    print(f"User is in {len(guild_ids)} servers: {guild_ids}")
 
     # Store user verification data
     user_data = load_json("user_verification_data.json", {})
@@ -255,20 +249,13 @@ async def process_verification(data):
 
     guild = bot.get_guild(target_guild_id)
     if not guild:
-        print("Bot not in target guild!")
         return
     member = guild.get_member(user_id)
     if not member:
-        print(f"User {user_id} not in guild.")
         return
 
-    print(f"Found member: {member.display_name}")
-
-    config = get_server_config(guild.id)
+    config = get_server_config(target_guild_id)
     server_blacklisted = config.get("blacklisted_servers", {})
-
-    print(f"Checking against blacklisted server IDs: {list(server_blacklisted.keys())}")
-    print(f"User's guild IDs: {guild_ids}")
 
     flagged_servers = [
         server_blacklisted[sid]
@@ -276,12 +263,9 @@ async def process_verification(data):
         if sid in guild_ids
     ]
 
-    print(f"Blacklisted servers found: {flagged_servers}")
-
     flag_channel = bot.get_channel(config.get("flag_channel_id")) if config.get("flag_channel_id") else None
 
     if flagged_servers:
-        print(f"User {username} is in blacklisted servers: {flagged_servers}")
         
         # Send DM to user before banning
         try:
@@ -293,14 +277,12 @@ async def process_verification(data):
                 "https://discord.gg/zFNRyHhvAm"
             )
             await member.send(ban_message)
-            print("Ban message DM sent to user")
-        except Exception as e:
-            print(f"Could not send DM to user: {e}")
+        except:
+            pass
         
         # Ban the user
         try:
             await member.ban(reason="Caught spying for an enemy clan")
-            print(f"User {username} ({user_id}) has been banned")
             
             # Send notification to flag channel
             if flag_channel:
@@ -312,11 +294,7 @@ async def process_verification(data):
                 embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
                 embed.timestamp = discord.utils.utcnow()
                 await flag_channel.send(embed=embed)
-                print("Ban notification sent to channel")
-            else:
-                print("No flag channel configured!")
         except discord.Forbidden:
-            print(f"Missing permissions to ban user {username}")
             if flag_channel:
                 embed = discord.Embed(
                     title="⚠️ Security Alert - Ban Failed",
@@ -326,20 +304,9 @@ async def process_verification(data):
                 embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
                 embed.timestamp = discord.utils.utcnow()
                 await flag_channel.send(embed=embed)
-        except Exception as e:
-            print(f"Error banning user: {e}")
-            if flag_channel:
-                embed = discord.Embed(
-                    title="⚠️ Security Alert - Ban Error",
-                    description=f"**Error banning user caught in enemy clan**\n**User ID:** {user_id}\n**Error:** {str(e)}",
-                    color=0xFFAA00
-                )
-                embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
-                embed.timestamp = discord.utils.utcnow()
-                await flag_channel.send(embed=embed)
+        except:
+            pass
     else:
-        print(f"User {username} passed verification")
-        
         # Get verified and unverified roles
         verified_role = guild.get_role(config.get("verified_role_id"))
         unverified_role = guild.get_role(config.get("unverified_role_id"))
@@ -348,23 +315,15 @@ async def process_verification(data):
         if verified_role:
             try:
                 await member.add_roles(verified_role)
-                print(f"Added verified role {verified_role.name} to user")
-            except discord.Forbidden:
-                print(f"Missing permissions to add verified role {verified_role.name}")
-            except Exception as e:
-                print(f"Error adding verified role: {e}")
-        else:
-            print("No verified role configured!")
+            except:
+                pass
         
         # Remove unverified role if configured
         if unverified_role and unverified_role in member.roles:
             try:
                 await member.remove_roles(unverified_role)
-                print(f"Removed unverified role {unverified_role.name} from user")
-            except discord.Forbidden:
-                print(f"Missing permissions to remove unverified role {unverified_role.name}")
-            except Exception as e:
-                print(f"Error removing unverified role: {e}")
+            except:
+                pass
         
         try:
             embed = discord.Embed(
@@ -373,9 +332,8 @@ async def process_verification(data):
                 color=0x00FF00
             )
             await member.send(embed=embed)
-            print("DM sent to user (verified)")
-        except Exception as e:
-            print(f"Could not send DM to user: {e}")
+        except:
+            pass
 
 # ---- Slash commands ----
 
@@ -749,16 +707,9 @@ async def root():
 
 @app.get("/oauth/callback")
 async def oauth_callback(code: str = None, error: str = None, state: str = None):
-    print("=== OAuth callback triggered ===")
-    print(f"Code received: {code is not None}")
-    print(f"Error received: {error}")
-    print(f"State (guild_id): {state}")
-
     if error:
-        print(f"OAuth error occurred: {error}")
         return HTMLResponse(f"<h3>❌ OAuth error: {error}</h3>")
     if not code:
-        print("No authorization code provided")
         return HTMLResponse("<h3>❌ No code provided.</h3>")
 
     token_url = "https://discord.com/api/oauth2/token"
@@ -809,8 +760,6 @@ async def oauth_callback(code: str = None, error: str = None, state: str = None)
         "guild_ids": user_guild_ids,
         "target_guild_id": target_guild_id
     }
-    print(f"Adding user {username} ({user_id}) to verification queue for guild {target_guild_id}")
-    print(f"User guild IDs: {user_guild_ids}")
     await verification_queue.put(verification_data)
 
     return HTMLResponse("<h3>✅ Verification complete! You may close this window and return to Discord.</h3>")
