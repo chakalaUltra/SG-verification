@@ -18,9 +18,7 @@ import math
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-# Get the Replit URL from environment or use a placeholder
-REPLIT_URL = os.environ.get("REPL_SLUG", "your-repl-name") + "." + os.environ.get("REPL_OWNER", "your-username") + ".repl.co"
-REDIRECT_URI = f"https://{REPLIT_URL}/oauth/callback"
+REDIRECT_URI = "https://ttutt-v8gg.onrender.com/oauth/callback"
 
 CONFIG_PATH = "server_configs.json"
 BLACKLISTED_PATH = "blacklisted_servers.json"
