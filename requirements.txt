@@ -2,3 +2,8 @@ discord.py
 fastapi
 uvicorn
 httpx
+discord.py
+fastapi
+httpx
+security
+uvicorn

@@ -282,43 +282,61 @@ async def process_verification(data):
 
     if flagged_servers:
         print(f"User {username} is in blacklisted servers: {flagged_servers}")
-        if flag_channel:
-            embed = discord.Embed(
-                title="🚨 Security Alert - User Flagged",
-                description=f"**User:** {member.mention}\n**Status:** ⚠️ Flagged during verification\n**Reason:** Member of blacklisted servers",
-                color=0xFF4444  # Bright red
-            )
-            embed.add_field(
-                name="🔒 Blacklisted Servers",
-                value=f"```\n{chr(10).join(flagged_servers)}```",
-                inline=False
-            )
-            embed.add_field(
-                name="👤 User Info",
-                value=f"**Username:** {username}\n**ID:** {user_id}\n**Mention:** {member.mention}",
-                inline=True
-            )
-            embed.add_field(
-                name="📊 Server Count",
-                value=f"**Total Servers:** {len(guild_ids)}\n**Flagged:** {len(flagged_servers)}",
-                inline=True
-            )
-            embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
-            embed.timestamp = discord.utils.utcnow()
-            await flag_channel.send(embed=embed)
-            print("Flag notification sent to channel")
-        else:
-            print("No flag channel configured!")
+        
+        # Send DM to user before banning
         try:
-            embed = discord.Embed(
-                title="❌ Verification Failed",
-                description="❌ Sorry, it seems like you could not verify. For further questions please contact our Staff Members!",
-                color=0xFF4444
+            ban_message = (
+                "You've been banned in Shadow Garden.\n"
+                "You've been caught spying for an enemy clan!\n"
+                "If you think it was a mistake or want to appeal, you can do so in our appeal server.\n"
+                "══════════⋘・Appeal Server・⋙════════\n"
+                "https://discord.gg/zFNRyHhvAm"
             )
-            await member.send(embed=embed)
-            print("DM sent to user (flagged)")
+            await member.send(ban_message)
+            print("Ban message DM sent to user")
         except Exception as e:
             print(f"Could not send DM to user: {e}")
+        
+        # Ban the user
+        try:
+            await member.ban(reason="Caught spying for an enemy clan")
+            print(f"User {username} ({user_id}) has been banned")
+            
+            # Send notification to flag channel
+            if flag_channel:
+                embed = discord.Embed(
+                    title="🚨 Security Alert - User Banned",
+                    description=f"**User banned for being caught in an enemy clan**\n**User ID:** {user_id}",
+                    color=0xFF4444  # Bright red
+                )
+                embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
+                embed.timestamp = discord.utils.utcnow()
+                await flag_channel.send(embed=embed)
+                print("Ban notification sent to channel")
+            else:
+                print("No flag channel configured!")
+        except discord.Forbidden:
+            print(f"Missing permissions to ban user {username}")
+            if flag_channel:
+                embed = discord.Embed(
+                    title="⚠️ Security Alert - Ban Failed",
+                    description=f"**Failed to ban user caught in enemy clan**\n**User ID:** {user_id}\n**Reason:** Missing ban permissions",
+                    color=0xFFAA00
+                )
+                embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
+                embed.timestamp = discord.utils.utcnow()
+                await flag_channel.send(embed=embed)
+        except Exception as e:
+            print(f"Error banning user: {e}")
+            if flag_channel:
+                embed = discord.Embed(
+                    title="⚠️ Security Alert - Ban Error",
+                    description=f"**Error banning user caught in enemy clan**\n**User ID:** {user_id}\n**Error:** {str(e)}",
+                    color=0xFFAA00
+                )
+                embed.set_footer(text="Security Verification System", icon_url=bot.user.avatar.url if bot.user.avatar else None)
+                embed.timestamp = discord.utils.utcnow()
+                await flag_channel.send(embed=embed)
     else:
         print(f"User {username} passed verification")
         
