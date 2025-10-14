@@ -737,14 +737,10 @@ app = FastAPI()
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    print(f"=== Incoming request ===")
-    print(f"Method: {request.method}")
-    print(f"URL: {request.url}")
-    print(f"Path: {request.url.path}")
-    print(f"Query params: {dict(request.query_params)}")
-    print(f"Headers: {dict(request.headers)}")
+    # Only log OAuth callbacks, not regular page visits
+    if request.url.path == "/oauth/callback":
+        print(f"OAuth callback: {request.url.path}")
     response = await call_next(request)
-    print(f"Response status: {response.status_code}")
     return response
 
 @app.get("/")
