@@ -1,0 +1,18 @@
+entrypoint = "securityhh.py"
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-25_05"
+
+[unitTest]
+language = "python3"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix"]
+
+[deployment]
+run = ["python3", "securityhh.py"]
+deploymentTarget = "cloudrun"
+
+[agent]
+expertMode = true
