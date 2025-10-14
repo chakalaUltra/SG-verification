@@ -234,7 +234,24 @@ async def process_verification(data):
     username = data["username"]
     target_guild_id = data.get("target_guild_id")
 
-    # Store user verification data
+    # Ensure we have a target guild
+    if not target_guild_id:
+        print(f"No target guild ID for user {user_id}")
+        return
+
+    # Get the specific guild where verification was initiated
+    guild = bot.get_guild(target_guild_id)
+    if not guild:
+        print(f"Guild {target_guild_id} not found")
+        return
+    
+    # Check if user is actually a member of this specific guild
+    member = guild.get_member(user_id)
+    if not member:
+        print(f"User {user_id} is not a member of guild {target_guild_id}")
+        return
+
+    # Store user verification data for THIS specific guild only
     user_data = load_json("user_verification_data.json", {})
     guild_str = str(target_guild_id)
     if guild_str not in user_data:
@@ -246,13 +263,6 @@ async def process_verification(data):
         "timestamp": discord.utils.utcnow().isoformat()
     }
     save_json("user_verification_data.json", user_data)
-
-    guild = bot.get_guild(target_guild_id)
-    if not guild:
-        return
-    member = guild.get_member(user_id)
-    if not member:
-        return
 
     config = get_server_config(target_guild_id)
     server_blacklisted = config.get("blacklisted_servers", {})
