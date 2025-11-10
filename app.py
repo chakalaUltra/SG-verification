@@ -18,7 +18,7 @@ import math
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
-REDIRECT_URI = "https://sg-verification.onrender.com/oauth/callback"
+REDIRECT_URI = "https://sg-verification-twrj.onrender.com/oauth/callback"
 
 CONFIG_PATH = "server_configs.json"
 BLACKLISTED_PATH = "blacklisted_servers.json"
